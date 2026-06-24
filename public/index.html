@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h1>Kozmos TAP</h1>
+
+<input id="name">
+<button onclick="start()">Start</button>
+
+<div id="game" style="display:none">
+
+<p id="user"></p>
+<p>Coins: <span id="coins">0</span></p>
+
+<button onclick="tap()">TAP</button>
+
+<h3>Leaderboard</h3>
+<div id="board"></div>
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+const socket = io();
+
+let player = {name:"",coins:0};
+
+function start(){
+  player.name = document.getElementById("name").value;
+  document.getElementById("game").style.display="block";
+  document.getElementById("user").innerText=player.name;
+  send();
+}
+
+function tap(){
+  player.coins++;
+  document.getElementById("coins").innerText=player.coins;
+  send();
+}
+
+function send(){
+  fetch("/update",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify(player)
+  });
+}
+
+socket.on("update",(data)=>{
+  data.sort((a,b)=>b.coins-a.coins);
+
+  document.getElementById("board").innerHTML =
+    data.map((p,i)=>`<div>${i+1}. ${p.name} - ${p.coins}</div>`).join("");
+});
+</script>
+
+</body>
+</html>
