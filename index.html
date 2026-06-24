@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Batuhan Kozmos TAP</title>
+
+  <style>
+    body{
+      margin:0;
+      background: radial-gradient(circle,#05051a,#000);
+      color:#7df9ff;
+      font-family:Arial;
+      text-align:center;
+    }
+
+    button{
+      padding:10px 15px;
+      margin:5px;
+      border:none;
+      border-radius:8px;
+      background:#7df9ff;
+      font-weight:bold;
+      cursor:pointer;
+    }
+
+    button:hover{background:#a66bff;}
+
+    input{
+      padding:10px;
+      border-radius:8px;
+      border:none;
+    }
+
+    #board div{
+      border-bottom:1px solid #222;
+      padding:5px;
+    }
+
+    h1{
+      margin-top:30px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="login">
+  <h1>🚀 BATUHAN KOZMOS TAP</h1>
+  <input id="name" placeholder="Username">
+  <button onclick="start()">ENTER GALAXY</button>
+</div>
+
+<div id="game" style="display:none">
+
+  <h2>🌌 Welcome <span id="user"></span></h2>
+
+  🪙 Coins: <span id="coins">0</span><br>
+  ⚡ Level: <span id="level">1</span><br>
+  🚀 Power: <span id="power">1</span><br>
+  💰 Upgrade Cost: <span id="cost">1000</span><br>
+
+  <br>
+
+  <button onclick="tap()">TAP 🚀</button>
+  <button onclick="upgrade()">UPGRADE</button>
+
+  <hr>
+
+  <h3>🏆 LEADERBOARD</h3>
+  <div id="board"></div>
+
+</div>
+
+<audio id="lvlSound"
+src="https://www.myinstants.com/media/sounds/level-up.mp3"></audio>
+
+<script>
+let player = {
+  name:"",
+  coins:0,
+  power:1,
+  level:1,
+  cost:1000,
+  lastSave:Date.now()
+};
+
+// 📊 LEVEL SYSTEM
+function req(l){
+  switch(l){
+    case 1:return 0;
+    case 2:return 1000;
+    case 3:return 10000;
+    case 4:return 50000;
+    case 5:return 300000;
+    case 6:return 1000000;
+    case 7:return 5000000;
+    case 8:return 10000000;
+    default:return Infinity;
+  }
+}
+
+// 🚀 START
+function start(){
+  player.name = document.getElementById("name").value;
+  if(!player.name) return;
+
+  load();
+  offlineGain();
+
+  document.getElementById("login").style.display="none";
+  document.getElementById("game").style.display="block";
+
+  document.getElementById("user").innerText = player.name;
+
+  save();
+  update();
+  render();
+}
+
+// 🚀 TAP
+function tap(){
+  player.coins += player.power;
+  checkLevel();
+  save();
+  update();
+  render();
+}
+
+// ⚡ LEVEL UP
+function checkLevel(){
+  let up = false;
+
+  while(player.coins >= req(player.level+1)){
+    player.level++;
+    player.power++;
+    up = true;
+
+    document.getElementById("lvlSound").play();
+  }
+
+  if(up) save();
+}
+
+// 💰 UPGRADE
+function upgrade(){
+  if(player.coins >= player.cost){
+    player.coins -= player.cost;
+    player.power += 2;
+    player.cost += 50000;
+  }
+  update();
+}
+
+// ⏳ IDLE COIN
+function offlineGain(){
+  let diff = (Date.now() - player.lastSave) / 1000;
+  player.coins += Math.floor(diff / 5);
+  player.lastSave = Date.now();
+  checkLevel();
+}
+
+// 💾 SAVE
+function save(){
+  player.lastSave = Date.now();
+  localStorage.setItem("ktap", JSON.stringify(player));
+
+  let lb = JSON.parse(localStorage.getItem("lb")||"[]");
+
+  let i = lb.findIndex(p=>p.name===player.name);
+
+  if(i>=0) lb[i]=player;
+  else lb.push(player);
+
+  localStorage.setItem("lb", JSON.stringify(lb));
+}
+
+// 📥 LOAD
+function load(){
+  let d = localStorage.getItem("ktap");
+  if(d) player = JSON.parse(d);
+}
+
+// 🏆 LEADERBOARD
+function render(){
+  let lb = JSON.parse(localStorage.getItem("lb")||"[]");
+
+  lb.sort((a,b)=>b.coins-a.coins);
+
+  document.getElementById("board").innerHTML =
+    lb.slice(0,10).map((p,i)=>
+      `<div>${i+1}. ${p.name} - 🪙 ${p.coins}</div>`
+    ).join("");
+}
+
+// 📊 UI
+function update(){
+  document.getElementById("coins").innerText = player.coins;
+  document.getElementById("level").innerText = player.level;
+  document.getElementById("power").innerText = player.power;
+  document.getElementById("cost").innerText = player.cost;
+}
+
+// 🔁 AUTO SAVE LOOP
+setInterval(()=>{
+  if(player.name){
+    save();
+    render();
+  }
+},2000);
+</script>
+
+</body>
+</html>
